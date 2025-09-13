@@ -3,16 +3,7 @@ import RacetrackCanvas from "../components/RacetrackCanvas";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-const HomePage = () => {
-
-    const getRacetracks = async (dataUrl) => {
-        try{
-            const response = await fetch(`${API_URL}/api/racetracks`, { method: "GET"});
-            console.log(response)
-        } catch(error){
-            console.error(error)
-        }
-    }
+const AddRacetrack = () => {
  
     const saveRacetrack = async (dataUrl) => {
         try {
@@ -45,4 +36,4 @@ const HomePage = () => {
     );
 }
 
-export default HomePage;
+export default AddRacetrack;
