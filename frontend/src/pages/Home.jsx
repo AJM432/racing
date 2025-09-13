@@ -40,7 +40,7 @@ const HomePage = () => {
 
     return(
         <div>
-            <RacetrackCanvas saveRacetrack={getRacetracks}/>
+            <RacetrackCanvas saveRacetrack={saveRacetrack}/>
         </div>
     );
 }
