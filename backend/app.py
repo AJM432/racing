@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 from image_to_svg import png_to_svg
 from flask_cors import CORS
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes on the app
@@ -190,4 +192,8 @@ def update_racetrack_image(racetrack_id):
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    load_dotenv()
+    debug_mode = bool(int(os.getenv("DEBUG", False)))
+
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
