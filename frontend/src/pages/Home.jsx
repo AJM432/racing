@@ -1,11 +1,13 @@
 import React from "react";
 import RacetrackCanvas from "../components/RacetrackCanvas";
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 const HomePage = () => {
 
     const getRacetracks = async (dataUrl) => {
         try{
-            const response = await fetch("https://racing-nefz.onrender.com/api/racetracks", { method: "GET"});
+            const response = await fetch(`${API_URL}/api/racetracks`, { method: "GET"});
             console.log(response)
         } catch(error){
             console.error(error)
@@ -14,7 +16,7 @@ const HomePage = () => {
  
     const saveRacetrack = async (dataUrl) => {
         try {
-          const response = await fetch("https://racing-nefz.onrender.com/api/racetracks", {
+          const response = await fetch(`${API_URL}/api/racetracks`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
