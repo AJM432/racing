@@ -1,57 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Cookies from "js-cookie";
+import RacetrackCanvas from "../components/RacetrackCanvas";
 
-const Account = () => {
-    const [username, setUsername] = useState("");
-    const [user, setUser] = useState("anon goose"); // default user
+const API_URL = process.env.REACT_APP_API_URL;
 
-    // Load username and user from cookie
-    useEffect(() => {
-        const savedUsername = Cookies.get("username");
-        setUsername(savedUsername || "");
-        setUser(savedUsername || "anon goose");
-    }, []);
+const AddRacetrack = () => {
+    const saveRacetrack = async (dataUrl) => {
+        // Get username from cookie or default
+        const username = Cookies.get("username") || "anon goose";
 
-    const handleUsernameChange = (e) => {
-        setUsername(e.target.value);
-    };
+        try {
+            const response = await fetch(`${API_URL}/api/racetracks`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: "test",
+                    image: dataUrl,
+                    username: username,
+                }),
+            });
 
-    const handleSave = () => {
-        const newUsername = username || "anon goose"; // fallback if empty
-        Cookies.set("username", newUsername, { expires: 365 });
-        setUser(newUsername);
-        alert(`Username updated to "${newUsername}"`);
+            if (!response.ok) {
+                throw new Error(`Failed to save racetrack: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log("Racetrack saved successfully:", result);
+        } catch (error) {
+            console.error("Error saving racetrack:", error);
+        }
     };
 
     return (
-        <div className="flex flex-col items-center justify-start min-h-screen p-6 bg-gray-900 text-white">
-            <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
-
-            {/* Display current user */}
-            <div className="mb-6 text-center">
-                <span className="text-gray-400">Current User:</span>{" "}
-                <span className="text-cyan-400 font-semibold">{user}</span>
-            </div>
-
-            {/* Username input */}
-            <div className="w-full max-w-md bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col space-y-4">
-                <label className="text-gray-300 font-semibold">Username</label>
-                <input
-                    type="text"
-                    value={username}
-                    onChange={handleUsernameChange}
-                    className="px-4 py-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
-                    placeholder="Enter your username"
-                />
-                <button
-                    onClick={handleSave}
-                    className="mt-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-full shadow-lg transform transition-transform hover:scale-105"
-                >
-                    Save Username
-                </button>
-            </div>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-6">
+            <h1 className="text-3xl font-bold text-white mb-6">Add a Racetrack</h1>
+            <RacetrackCanvas saveRacetrack={saveRacetrack} />
         </div>
     );
 };
 
-export default Account;
+export default AddRacetrack;
