@@ -77,6 +77,8 @@ def upload_racetrack():
         return jsonify({"error": "Missing 'name' in request"}), 400
     if 'image' not in data:
         return jsonify({"error": "Missing 'image' in request"}), 400
+    if 'username' not in data:
+        return jsonify({"error": "Missing 'username' in request"}), 400
     
     # Generate unique ID for the racetrack
     racetrack_id = str(uuid.uuid4())
@@ -93,6 +95,7 @@ def upload_racetrack():
     racetracks[racetrack_id] = {
         "id": racetrack_id,
         "name": data['name'],
+        "username": data['username'],
         "image": data['image'],  # Base64 encoded image data
         "saved_file": saved_filepath,  # Path to saved image file
         "uploaded_at": datetime.now().isoformat()
@@ -103,6 +106,7 @@ def upload_racetrack():
         "racetrack": {
             "id": racetrack_id,
             "name": data['name'],
+            "username": data['username'],
             "saved_file": saved_filepath,
             "uploaded_at": racetracks[racetrack_id]["uploaded_at"]
         }
@@ -117,6 +121,7 @@ def get_racetracks():
         racetracks_list.append({
             "id": racetrack["id"],
             "name": racetrack["name"],
+            "username": racetrack["username"],
             "saved_file": racetrack["saved_file"],
             "uploaded_at": racetrack["uploaded_at"]
         })
@@ -177,6 +182,7 @@ def update_racetrack_image(racetrack_id):
         "racetrack": {
             "id": racetrack_id,
             "name": existing_racetrack["name"],
+            "username": existing_racetrack["username"],
             "saved_file": saved_filepath,
             "uploaded_at": existing_racetrack["uploaded_at"],
             "updated_at": racetracks[racetrack_id]["updated_at"]
@@ -184,7 +190,6 @@ def update_racetrack_image(racetrack_id):
     })
 
 if __name__ == '__main__':
-
     load_dotenv()
     debug_mode = bool(int(os.getenv("DEBUG", False)))
 

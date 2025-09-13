@@ -63,7 +63,7 @@ async function testWelcome() {
 }
 
 // Test upload racetrack
-async function testUpload(imagePath, name = 'Test Racetrack') {
+async function testUpload(imagePath, name = 'Test Racetrack', username = 'testuser') {
     try {
         console.log(`Testing POST /api/racetracks with ${imagePath}`);
         
@@ -73,7 +73,7 @@ async function testUpload(imagePath, name = 'Test Racetrack') {
         const response = await fetch(`${API_BASE_URL}/api/racetracks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, image: base64Image })
+            body: JSON.stringify({ name, username, image: base64Image })
         });
 
         const result = await response.json();
@@ -118,6 +118,7 @@ async function testGet(racetrackId) {
             console.log('Success:', {
                 id: result.racetrack.id,
                 name: result.racetrack.name,
+                username: result.racetrack.username,
                 saved_file: result.racetrack.saved_file,
                 uploaded_at: result.racetrack.uploaded_at,
                 image_size: result.racetrack.image.length + ' characters'
@@ -165,7 +166,7 @@ function main() {
         console.log('Usage: node test_racetrack_api.js <test_name> [args...]');
         console.log('Tests:');
         console.log('  welcome                           - Test GET /');
-        console.log('  upload <image_path> [name]        - Test POST /api/racetracks');
+        console.log('  upload <image_path> [name] [username] - Test POST /api/racetracks');
         console.log('  list                              - Test GET /api/racetracks');
         console.log('  get <racetrack_id>                - Test GET /api/racetracks/<id>');
         console.log('  update <racetrack_id> <image_path> - Test PUT /api/racetracks/<id>');
@@ -179,11 +180,12 @@ function main() {
         case 'upload':
             const imagePath = args[1];
             const name = args[2] || 'Test Racetrack';
+            const username = args[3] || 'testuser';
             if (!imagePath) {
                 console.error('Error: Image path required for upload test');
                 return;
             }
-            testUpload(imagePath, name);
+            testUpload(imagePath, name, username);
             break;
         case 'list':
             testList();
