@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
 import base64
 import uuid
 import os
@@ -10,13 +11,44 @@ import os
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes on the app
 
-# Hashmap to store racetrack images and their metadata
-racetracks = {}
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///racetracks.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Database model for racetracks
+class Racetrack(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), nullable=False)
+    saved_file = db.Column(db.String(200), nullable=False)
+    uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=True)
+
+    def to_dict(self, include_image_url=False):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'username': self.username,
+            'saved_file': self.saved_file,
+            'uploaded_at': self.uploaded_at.isoformat()
+        }
+        if include_image_url:
+            # Return URL to access the image instead of base64 data
+            filename = os.path.basename(self.saved_file)
+            result['image_url'] = f'/saved_images/{filename}'
+        if self.updated_at:
+            result['updated_at'] = self.updated_at.isoformat()
+        return result
 
 # Create images directory if it doesn't exist
 IMAGES_DIR = 'saved_images'
 if not os.path.exists(IMAGES_DIR):
     os.makedirs(IMAGES_DIR)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
 
 @app.route('/saved_images/<path:filename>')
 def serve_image(filename):
@@ -91,57 +123,55 @@ def upload_racetrack():
     if not saved_filepath:
         return jsonify({"error": "Failed to save image"}), 500
     
-    # Store racetrack data in hashmap
-    racetracks[racetrack_id] = {
-        "id": racetrack_id,
-        "name": data['name'],
-        "username": data['username'],
-        "image": data['image'],  # Base64 encoded image data
-        "saved_file": saved_filepath,  # Path to saved image file
-        "uploaded_at": datetime.now().isoformat()
-    }
-    
-    return jsonify({
-        "message": "Racetrack uploaded successfully",
-        "racetrack": {
-            "id": racetrack_id,
-            "name": data['name'],
-            "username": data['username'],
-            "saved_file": saved_filepath,
-            "uploaded_at": racetracks[racetrack_id]["uploaded_at"]
-        }
-    }), 201
+    # Create new racetrack record in database
+    try:
+        new_racetrack = Racetrack(
+            id=racetrack_id,
+            name=data['name'],
+            username=data['username'],
+            saved_file=saved_filepath
+        )
+        db.session.add(new_racetrack)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Racetrack uploaded successfully",
+            "racetrack": new_racetrack.to_dict(include_image_url=True)
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        # Clean up saved file if database operation fails
+        if os.path.exists(saved_filepath):
+            os.remove(saved_filepath)
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 # Get all racetracks
 @app.route('/api/racetracks', methods=['GET'])
 def get_racetracks():
-    # Return racetracks without image data for performance
-    racetracks_list = []
-    for racetrack_id, racetrack in racetracks.items():
-        racetracks_list.append({
-            "id": racetrack["id"],
-            "name": racetrack["name"],
-            "username": racetrack["username"],
-            "saved_file": racetrack["saved_file"],
-            "uploaded_at": racetrack["uploaded_at"]
-        })
-    
-    return jsonify({"racetracks": racetracks_list})
+    try:
+        # Query all racetracks from database
+        racetracks = Racetrack.query.all()
+        racetracks_list = [racetrack.to_dict(include_image_url=False) for racetrack in racetracks]
+        
+        return jsonify({"racetracks": racetracks_list})
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 # Get specific racetrack by ID (including image)
 @app.route('/api/racetracks/<racetrack_id>', methods=['GET'])
 def get_racetrack(racetrack_id):
-    if racetrack_id not in racetracks:
-        return jsonify({"error": "Racetrack not found"}), 404
-    
-    return jsonify({"racetrack": racetracks[racetrack_id]})
+    try:
+        racetrack = Racetrack.query.get(racetrack_id)
+        if not racetrack:
+            return jsonify({"error": "Racetrack not found"}), 404
+        
+        return jsonify({"racetrack": racetrack.to_dict(include_image_url=True)})
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 # Update racetrack image by ID
 @app.route('/api/racetracks/<racetrack_id>', methods=['PUT'])
 def update_racetrack_image(racetrack_id):
-    if racetrack_id not in racetracks:
-        return jsonify({"error": "Racetrack not found"}), 404
-    
     if not request.is_json:
         return jsonify({"error": "Missing JSON in request"}), 400
     
@@ -151,43 +181,41 @@ def update_racetrack_image(racetrack_id):
     if 'image' not in data:
         return jsonify({"error": "Missing 'image' in request"}), 400
     
-    # Get existing racetrack
-    existing_racetrack = racetracks[racetrack_id]
-    
-    # Remove old image file if it exists
-    old_file_path = existing_racetrack.get("saved_file")
-    if old_file_path and os.path.exists(old_file_path):
-        try:
-            os.remove(old_file_path)
-        except Exception as e:
-            print(f"Warning: Could not remove old file {old_file_path}: {e}")
-    
-    # Generate filename and save new image to disk
-    file_extension = get_extension_from_base64(data['image'])
-    filename = f"{racetrack_id}{file_extension}"
-    saved_filepath = save_base64_image(data['image'], filename)
-    
-    if not saved_filepath:
-        return jsonify({"error": "Failed to save image"}), 500
-    
-    # Update racetrack data in hashmap
-    racetracks[racetrack_id].update({
-        "image": data['image'],  # New base64 encoded image data
-        "saved_file": saved_filepath,  # New image file path
-        "updated_at": datetime.now().isoformat()
-    })
-    
-    return jsonify({
-        "message": "Racetrack image updated successfully",
-        "racetrack": {
-            "id": racetrack_id,
-            "name": existing_racetrack["name"],
-            "username": existing_racetrack["username"],
-            "saved_file": saved_filepath,
-            "uploaded_at": existing_racetrack["uploaded_at"],
-            "updated_at": racetracks[racetrack_id]["updated_at"]
-        }
-    })
+    try:
+        # Get existing racetrack from database
+        existing_racetrack = Racetrack.query.get(racetrack_id)
+        if not existing_racetrack:
+            return jsonify({"error": "Racetrack not found"}), 404
+        
+        # Remove old image file if it exists
+        old_file_path = existing_racetrack.saved_file
+        if old_file_path and os.path.exists(old_file_path):
+            try:
+                os.remove(old_file_path)
+            except Exception as e:
+                print(f"Warning: Could not remove old file {old_file_path}: {e}")
+        
+        # Generate filename and save new image to disk
+        file_extension = get_extension_from_base64(data['image'])
+        filename = f"{racetrack_id}{file_extension}"
+        saved_filepath = save_base64_image(data['image'], filename)
+        
+        if not saved_filepath:
+            return jsonify({"error": "Failed to save image"}), 500
+        
+        # Update racetrack data in database
+        existing_racetrack.saved_file = saved_filepath
+        existing_racetrack.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Racetrack image updated successfully",
+            "racetrack": existing_racetrack.to_dict(include_image_url=True)
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     load_dotenv()

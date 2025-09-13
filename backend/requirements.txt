@@ -3,3 +3,4 @@ Werkzeug==2.3.7
 vtracer==0.6.11
 Flask-Cors==6.0.1
 python-dotenv==1.1.1
+Flask-SQLAlchemy==3.0.5

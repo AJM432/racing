@@ -120,8 +120,7 @@ async function testGet(racetrackId) {
                 name: result.racetrack.name,
                 username: result.racetrack.username,
                 saved_file: result.racetrack.saved_file,
-                uploaded_at: result.racetrack.uploaded_at,
-                image_size: result.racetrack.image.length + ' characters'
+                uploaded_at: result.racetrack.uploaded_at
             });
         } else {
             console.error('Failed:', result);
