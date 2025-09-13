@@ -3,7 +3,6 @@ import base64
 import uuid
 import os
 from datetime import datetime
-from image_to_svg import png_to_svg
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -19,8 +18,8 @@ IMAGES_DIR = 'saved_images'
 if not os.path.exists(IMAGES_DIR):
     os.makedirs(IMAGES_DIR)
 
-# Utility function to parse base64 image, save to file, and convert to SVG
-def save_base64_image_as_svg(base64_string, racetrack_id):
+# Utility function to parse base64 image and save to file
+def save_base64_image(base64_string, filename):
     try:
         # Remove data URL prefix if present (e.g., "data:image/png;base64,")
         if ',' in base64_string:
@@ -31,29 +30,14 @@ def save_base64_image_as_svg(base64_string, racetrack_id):
         # Decode base64 to binary data
         image_data = base64.b64decode(base64_data)
         
-        # Save temporary PNG file
-        temp_png_filename = f"{racetrack_id}_temp.png"
-        temp_png_filepath = os.path.join(IMAGES_DIR, temp_png_filename)
-        with open(temp_png_filepath, 'wb') as f:
+        # Save to file
+        filepath = os.path.join(IMAGES_DIR, filename)
+        with open(filepath, 'wb') as f:
             f.write(image_data)
         
-        # Convert PNG to SVG
-        svg_filename = f"{racetrack_id}.svg"
-        svg_filepath = os.path.join(IMAGES_DIR, svg_filename)
-        
-        png_to_svg(temp_png_filepath, svg_filepath, colormode="color", mode="spline")
-        
-        # Remove temporary PNG file
-        if os.path.exists(temp_png_filepath):
-            os.remove(temp_png_filepath)
-        
-        return svg_filepath
+        return filepath
     except Exception as e:
-        print(f"Error converting image to SVG: {e}")
-        # Clean up temp file if it exists
-        temp_png_filepath = os.path.join(IMAGES_DIR, f"{racetrack_id}_temp.png")
-        if os.path.exists(temp_png_filepath):
-            os.remove(temp_png_filepath)
+        print(f"Error saving image: {e}")
         return None
 
 # Utility function to get file extension from base64 data URL
@@ -93,18 +77,20 @@ def upload_racetrack():
     # Generate unique ID for the racetrack
     racetrack_id = str(uuid.uuid4())
     
-    # Convert image to SVG and save to disk
-    saved_svg_filepath = save_base64_image_as_svg(data['image'], racetrack_id)
+    # Generate filename and save image to disk
+    file_extension = get_extension_from_base64(data['image'])
+    filename = f"{racetrack_id}{file_extension}"
+    saved_filepath = save_base64_image(data['image'], filename)
     
-    if not saved_svg_filepath:
-        return jsonify({"error": "Failed to convert image to SVG"}), 500
+    if not saved_filepath:
+        return jsonify({"error": "Failed to save image"}), 500
     
     # Store racetrack data in hashmap
     racetracks[racetrack_id] = {
         "id": racetrack_id,
         "name": data['name'],
         "image": data['image'],  # Base64 encoded image data
-        "saved_file": saved_svg_filepath,  # Path to saved SVG file
+        "saved_file": saved_filepath,  # Path to saved image file
         "uploaded_at": datetime.now().isoformat()
     }
     
@@ -113,7 +99,7 @@ def upload_racetrack():
         "racetrack": {
             "id": racetrack_id,
             "name": data['name'],
-            "saved_file": saved_svg_filepath,
+            "saved_file": saved_filepath,
             "uploaded_at": racetracks[racetrack_id]["uploaded_at"]
         }
     }), 201
@@ -159,7 +145,7 @@ def update_racetrack_image(racetrack_id):
     # Get existing racetrack
     existing_racetrack = racetracks[racetrack_id]
     
-    # Remove old SVG file if it exists
+    # Remove old image file if it exists
     old_file_path = existing_racetrack.get("saved_file")
     if old_file_path and os.path.exists(old_file_path):
         try:
@@ -167,16 +153,18 @@ def update_racetrack_image(racetrack_id):
         except Exception as e:
             print(f"Warning: Could not remove old file {old_file_path}: {e}")
     
-    # Convert new image to SVG and save to disk
-    saved_svg_filepath = save_base64_image_as_svg(data['image'], racetrack_id)
+    # Generate filename and save new image to disk
+    file_extension = get_extension_from_base64(data['image'])
+    filename = f"{racetrack_id}{file_extension}"
+    saved_filepath = save_base64_image(data['image'], filename)
     
-    if not saved_svg_filepath:
-        return jsonify({"error": "Failed to convert image to SVG"}), 500
+    if not saved_filepath:
+        return jsonify({"error": "Failed to save image"}), 500
     
     # Update racetrack data in hashmap
     racetracks[racetrack_id].update({
         "image": data['image'],  # New base64 encoded image data
-        "saved_file": saved_svg_filepath,  # New SVG file path
+        "saved_file": saved_filepath,  # New image file path
         "updated_at": datetime.now().isoformat()
     })
     
@@ -185,7 +173,7 @@ def update_racetrack_image(racetrack_id):
         "racetrack": {
             "id": racetrack_id,
             "name": existing_racetrack["name"],
-            "saved_file": saved_svg_filepath,
+            "saved_file": saved_filepath,
             "uploaded_at": existing_racetrack["uploaded_at"],
             "updated_at": racetracks[racetrack_id]["updated_at"]
         }
