@@ -14,7 +14,7 @@ function App() {
             { pageViewing == "home" ? 
                 <HomePage />
             :
-                pageViewing == "feed" ?
+                pageViewing == "all_racetracks" ?
                     <AllRacetracks />
                 :
                     <AllRacetracks />

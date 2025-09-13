@@ -7,7 +7,7 @@ const BottomBar = ({ setPageViewing }) => {
         <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-md">
             <div className="flex justify-around py-3">
                 <button
-                    onClick={() => setPageViewing("account")}
+                    onClick={() => setPageViewing("home")}
                     className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
                 >
                     <FontAwesomeIcon icon={faUser} className="w-6 h-6 mb-1" />
@@ -23,7 +23,7 @@ const BottomBar = ({ setPageViewing }) => {
                 </button>
 
                 <button
-                    onClick={() => setPageViewing("feed")}
+                    onClick={() => setPageViewing("all_racetracks")}
                     className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
                 >
                     <FontAwesomeIcon icon={faNewspaper} className="w-6 h-6 mb-1" />
