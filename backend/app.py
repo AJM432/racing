@@ -112,11 +112,7 @@ def get_racetracks():
             "uploaded_at": racetrack["uploaded_at"]
         })
     
-    response = jsonify({"racetracks": racetracks_list})
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, POST, DELETE'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return response
+    return jsonify({"racetracks": racetracks_list})
 
 # Get specific racetrack by ID (including image)
 @app.route('/api/racetracks/<racetrack_id>', methods=['GET'])
