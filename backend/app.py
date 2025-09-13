@@ -157,6 +157,22 @@ def get_racetracks():
     except Exception as e:
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
+# Get racetracks by username
+@app.route('/api/racetracks/user/<username>', methods=['GET'])
+def get_racetracks_by_user(username):
+    try:
+        # Query racetracks filtered by username
+        racetracks = Racetrack.query.filter_by(username=username).all()
+        racetracks_list = [racetrack.to_dict(include_image_url=False) for racetrack in racetracks]
+        
+        return jsonify({
+            "username": username,
+            "racetracks": racetracks_list,
+            "count": len(racetracks_list)
+        })
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
 # Get specific racetrack by ID (including image)
 @app.route('/api/racetracks/<racetrack_id>', methods=['GET'])
 def get_racetrack(racetrack_id):

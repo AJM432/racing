@@ -107,6 +107,24 @@ async function testList() {
     }
 }
 
+// Test get racetracks by username
+async function testListByUser(username) {
+    try {
+        console.log(`Testing GET /api/racetracks/user/${username}`);
+        const response = await fetch(`${API_BASE_URL}/api/racetracks/user/${username}`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('Success:', result);
+            console.log(`Found ${result.count} racetracks for user: ${result.username}`);
+        } else {
+            console.error('Failed:', result);
+        }
+    } catch (error) {
+        console.error('Network error:', error.message);
+    }
+}
+
 // Test get specific racetrack
 async function testGet(racetrackId) {
     try {
@@ -167,6 +185,7 @@ function main() {
         console.log('  welcome                           - Test GET /');
         console.log('  upload <image_path> [name] [username] - Test POST /api/racetracks');
         console.log('  list                              - Test GET /api/racetracks');
+        console.log('  listuser <username>               - Test GET /api/racetracks/user/<username>');
         console.log('  get <racetrack_id>                - Test GET /api/racetracks/<id>');
         console.log('  update <racetrack_id> <image_path> - Test PUT /api/racetracks/<id>');
         return;
@@ -179,15 +198,23 @@ function main() {
         case 'upload':
             const imagePath = args[1];
             const name = args[2] || 'Test Racetrack';
-            const username = args[3] || 'testuser';
+            const uploadUsername = args[3] || 'testuser';
             if (!imagePath) {
                 console.error('Error: Image path required for upload test');
                 return;
             }
-            testUpload(imagePath, name, username);
+            testUpload(imagePath, name, uploadUsername);
             break;
         case 'list':
             testList();
+            break;
+        case 'listuser':
+            const listUsername = args[1];
+            if (!listUsername) {
+                console.error('Error: Username required for listuser test');
+                return;
+            }
+            testListByUser(listUsername);
             break;
         case 'get':
             const racetrackId = args[1];
