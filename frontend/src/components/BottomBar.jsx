@@ -2,36 +2,37 @@ import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faPlus, faNewspaper } from "@fortawesome/free-solid-svg-icons";
 
-const BottomBar = ({ setPageViewing }) => {
-    return (
-        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-md">
-            <div className="flex justify-around py-3">
-                <button
-                    onClick={() => setPageViewing("home")}
-                    className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
-                >
-                    <FontAwesomeIcon icon={faUser} className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Account</span>
-                </button>
+const BottomBar = ({ pageViewing, setPageViewing }) => {
+  const buttons = [
+    { name: "account", icon: faUser },
+    { name: "add", icon: faPlus },
+    { name: "feed", icon: faNewspaper },
+  ];
 
-                <button
-                    onClick={() => setPageViewing("add")}
-                    className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
-                >
-                    <FontAwesomeIcon icon={faPlus} className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Add</span>
-                </button>
-
-                <button
-                    onClick={() => setPageViewing("all_racetracks")}
-                    className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
-                >
-                    <FontAwesomeIcon icon={faNewspaper} className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Feed</span>
-                </button>
-            </div>
-        </div>
-    );
+  return (
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 dark:bg-gray-900/90 backdrop-blur-lg rounded-full shadow-2xl px-6 py-3 flex justify-between w-3/4 max-w-md border border-gray-700 z-50">
+      {buttons.map((btn) => (
+        <button
+          key={btn.name}
+          onClick={() => setPageViewing(btn.name)}
+          className={`
+            flex flex-col items-center justify-center
+            w-16 h-16
+            rounded-full
+            transition-all duration-300
+            ${
+              pageViewing === btn.name
+                ? "bg-gradient-to-tr from-cyan-400 to-blue-500 text-white shadow-[0_0_20px_rgba(0,255,255,0.6)] scale-110"
+                : "text-gray-400 hover:text-cyan-400 hover:bg-gray-800 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)]"
+            }
+          `}
+        >
+          <FontAwesomeIcon icon={btn.icon} className="w-6 h-6" />
+          <span className="text-xs font-semibold mt-1 capitalize">{btn.name}</span>
+        </button>
+      ))}
+    </div>
+  );
 };
 
 export default BottomBar;
