@@ -1,44 +1,67 @@
-import React from "react";
+import React, { useState } from "react";
 import Cookies from "js-cookie";
 import RacetrackCanvas from "../components/RacetrackCanvas";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
 const AddRacetrack = () => {
-    const saveRacetrack = async (dataUrl) => {
-        // Get username from cookie or default
-        const username = Cookies.get("username") || "anon goose";
+  const [title, setTitle] = useState("");
+  const [canvasData, setCanvasData] = useState(null);
 
-        try {
-            const response = await fetch(`${API_URL}/api/racetracks`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    name: "test",
-                    image: dataUrl,
-                    username: username,
-                }),
-            });
+  const saveRacetrack = async () => {
+    if (!title || !canvasData) return;
 
-            if (!response.ok) {
-                throw new Error(`Failed to save racetrack: ${response.statusText}`);
-            }
+    const username = Cookies.get("username") || "anon goose";
 
-            const result = await response.json();
-            console.log("Racetrack saved successfully:", result);
-        } catch (error) {
-            console.error("Error saving racetrack:", error);
-        }
-    };
+    try {
+      const response = await fetch(`${API_URL}/api/racetracks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: title,
+          image: canvasData,
+          username,
+        }),
+      });
 
-    return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-6">
-            <h1 className="text-3xl font-bold text-white mb-6">Add a Racetrack</h1>
-            <RacetrackCanvas saveRacetrack={saveRacetrack} />
-        </div>
-    );
+      if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
+      const result = await response.json();
+      console.log("Racetrack saved:", result);
+    } catch (error) {
+      console.error("Error saving racetrack:", error);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-white">Add a Racetrack</h1>
+
+      {/* Title Input */}
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Enter racetrack title..."
+        className="px-4 py-2 rounded-lg w-full max-w-md bg-gray-800 text-white border border-gray-600 focus:ring-2 focus:ring-cyan-400"
+      />
+
+      {/* Canvas */}
+      <RacetrackCanvas onCanvasChange={setCanvasData} />
+
+      {/* Save Button */}
+      <button
+        onClick={saveRacetrack}
+        disabled={!title}
+        className={`px-8 py-3 rounded-full font-bold shadow-lg transform transition-transform ${
+          title
+            ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:scale-110 hover:shadow-[0_0_25px_rgba(0,255,255,0.7)]"
+            : "bg-gray-600 text-gray-300 cursor-not-allowed"
+        }`}
+      >
+        Save Racetrack
+      </button>
+    </div>
+  );
 };
 
 export default AddRacetrack;

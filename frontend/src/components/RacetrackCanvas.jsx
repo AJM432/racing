@@ -1,126 +1,79 @@
 import React, { useRef, useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUndo } from "@fortawesome/free-solid-svg-icons";
 
-const RacecarCanvas = ({ saveRacetrack }) => {
+const RacetrackCanvas = ({ onCanvasChange }) => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState([]);
-  const [currentPath, setCurrentPath] = useState(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-
-    // Set canvas size
     canvas.width = 800;
     canvas.height = 600;
 
-    // Redraw saved paths
-    const redraw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      paths.forEach((pathDataUrl) => {
-        const img = new Image();
-        img.src = pathDataUrl;
-        img.onload = () => ctx.drawImage(img, 0, 0);
-      });
-    };
+    // redraw paths
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    paths.forEach((pathDataUrl) => {
+      const img = new Image();
+      img.src = pathDataUrl;
+      img.onload = () => ctx.drawImage(img, 0, 0);
+    });
 
-    redraw();
-  }, [paths]);
+    // inform parent of latest canvas snapshot
+    if (canvas) onCanvasChange(canvas.toDataURL());
+  }, [paths, onCanvasChange]);
 
   const startDrawing = (e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
+    const ctx = canvasRef.current.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
     setIsDrawing(true);
-    setCurrentPath(new Path2D());
-    currentPath?.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
   };
 
   const draw = (e) => {
     if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
+    const ctx = canvasRef.current.getContext("2d");
     ctx.lineWidth = 5;
-    ctx.strokeStyle = "#0FF"; // Neon cyan for futuristic look
+    ctx.strokeStyle = "#0FF";
     ctx.lineCap = "round";
-    ctx.shadowBlur = 0; // No blur, crisp strokes
-
     ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
     ctx.stroke();
-
-    currentPath?.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
   };
 
   const stopDrawing = () => {
     if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
-    ctx.closePath();
     setIsDrawing(false);
 
-    const dataUrl = canvas.toDataURL();
-    setPaths((prev) => [...prev, dataUrl]);
+    const canvas = canvasRef.current;
+    setPaths((prev) => [...prev, canvas.toDataURL()]);
   };
 
   const handleUndo = () => {
-    setPaths((prev) => {
-      const newPaths = prev.slice(0, -1);
-      const canvas = canvasRef.current;
-      if (!canvas) return newPaths;
-      const ctx = canvas.getContext("2d");
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      newPaths.forEach((pathDataUrl) => {
-        const img = new Image();
-        img.src = pathDataUrl;
-        img.onload = () => ctx.drawImage(img, 0, 0);
-      });
-
-      return newPaths;
-    });
-  };
-
-  const handleSave = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    saveRacetrack(canvas.toDataURL());
+    setPaths((prev) => prev.slice(0, -1));
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6">
+    <div className="relative w-full max-w-3xl">
       <canvas
         ref={canvasRef}
-        className="border-4 border-gray-700 rounded-2xl bg-gray-800 cursor-crosshair w-full max-w-3xl shadow-lg"
+        className="border-4 border-gray-700 rounded-2xl bg-gray-800 cursor-crosshair w-full shadow-lg"
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
       />
-      <div className="flex space-x-6">
-        <button
-          onClick={handleUndo}
-          className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-400 hover:to-yellow-300 text-black font-bold rounded-full shadow-lg transform transition-transform hover:scale-110 hover:shadow-[0_0_25px_rgba(255,255,0,0.7)]"
-        >
-          Undo
-        </button>
-        <button
-          onClick={handleSave}
-          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-full shadow-lg transform transition-transform hover:scale-110 hover:shadow-[0_0_25px_rgba(0,255,255,0.7)]"
-        >
-          Save
-        </button>
-      </div>
+      {/* Undo button in lower-left corner of the canvas */}
+      <button
+        onClick={handleUndo}
+        className="absolute bottom-4 left-4 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+      >
+        <FontAwesomeIcon icon={faUndo} className="w-6 h-6" />
+      </button>
     </div>
   );
 };
 
-export default RacecarCanvas;
+export default RacetrackCanvas;
