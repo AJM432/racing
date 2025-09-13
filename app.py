@@ -1,49 +1,73 @@
 from flask import Flask, jsonify, request
+import base64
+import uuid
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Sample data
-items = [
-    {"id": 1, "name": "Item 1"},
-    {"id": 2, "name": "Item 2"},
-    {"id": 3, "name": "Item 3"}
-]
+# Hashmap to store racetrack images and their metadata
+racetracks = {}
 
 # Root endpoint
 @app.route('/')
 def home():
-    return "Welcome to the Flask API!"
+    return "Welcome to the Racetrack API!"
 
-# Get all items
-@app.route('/api/items', methods=['GET'])
-def get_items():
-    return jsonify({"items": items})
-
-# Get a specific item by ID
-@app.route('/api/items/<int:item_id>', methods=['GET'])
-def get_item(item_id):
-    item = next((item for item in items if item["id"] == item_id), None)
-    if item is None:
-        return jsonify({"error": "Item not found"}), 404
-    return jsonify({"item": item})
-
-# Add a new item
-@app.route('/api/items', methods=['POST'])
-def add_item():
+# Upload racetrack image with name
+@app.route('/api/racetracks', methods=['POST'])
+def upload_racetrack():
     if not request.is_json:
         return jsonify({"error": "Missing JSON in request"}), 400
     
     data = request.get_json()
+    
+    # Validate required fields
     if 'name' not in data:
         return jsonify({"error": "Missing 'name' in request"}), 400
+    if 'image' not in data:
+        return jsonify({"error": "Missing 'image' in request"}), 400
     
-    new_item = {
-        "id": len(items) + 1,
-        "name": data['name']
+    # Generate unique ID for the racetrack
+    racetrack_id = str(uuid.uuid4())
+    
+    # Store racetrack data in hashmap
+    racetracks[racetrack_id] = {
+        "id": racetrack_id,
+        "name": data['name'],
+        "image": data['image'],  # Base64 encoded image data
+        "uploaded_at": datetime.now().isoformat()
     }
-    items.append(new_item)
     
-    return jsonify({"item": new_item}), 201
+    return jsonify({
+        "message": "Racetrack uploaded successfully",
+        "racetrack": {
+            "id": racetrack_id,
+            "name": data['name'],
+            "uploaded_at": racetracks[racetrack_id]["uploaded_at"]
+        }
+    }), 201
+
+# Get all racetracks
+@app.route('/api/racetracks', methods=['GET'])
+def get_racetracks():
+    # Return racetracks without image data for performance
+    racetracks_list = []
+    for racetrack_id, racetrack in racetracks.items():
+        racetracks_list.append({
+            "id": racetrack["id"],
+            "name": racetrack["name"],
+            "uploaded_at": racetrack["uploaded_at"]
+        })
+    
+    return jsonify({"racetracks": racetracks_list})
+
+# Get specific racetrack by ID (including image)
+@app.route('/api/racetracks/<racetrack_id>', methods=['GET'])
+def get_racetrack(racetrack_id):
+    if racetrack_id not in racetracks:
+        return jsonify({"error": "Racetrack not found"}), 404
+    
+    return jsonify({"racetrack": racetracks[racetrack_id]})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
