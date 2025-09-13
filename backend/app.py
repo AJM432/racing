@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 import base64
 import uuid
 import os
@@ -17,6 +17,10 @@ racetracks = {}
 IMAGES_DIR = 'saved_images'
 if not os.path.exists(IMAGES_DIR):
     os.makedirs(IMAGES_DIR)
+
+@app.route('/saved_images/<path:filename>')
+def serve_image(filename):
+    return send_from_directory(IMAGES_DIR, filename)
 
 # Utility function to parse base64 image and save to file
 def save_base64_image(base64_string, filename):
