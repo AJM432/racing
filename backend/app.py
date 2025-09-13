@@ -137,5 +137,55 @@ def get_racetrack(racetrack_id):
     
     return jsonify({"racetrack": racetracks[racetrack_id]})
 
+# Update racetrack image by ID
+@app.route('/api/racetracks/<racetrack_id>', methods=['PUT'])
+def update_racetrack_image(racetrack_id):
+    if racetrack_id not in racetracks:
+        return jsonify({"error": "Racetrack not found"}), 404
+    
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    
+    # Validate required field
+    if 'image' not in data:
+        return jsonify({"error": "Missing 'image' in request"}), 400
+    
+    # Get existing racetrack
+    existing_racetrack = racetracks[racetrack_id]
+    
+    # Remove old SVG file if it exists
+    old_file_path = existing_racetrack.get("saved_file")
+    if old_file_path and os.path.exists(old_file_path):
+        try:
+            os.remove(old_file_path)
+        except Exception as e:
+            print(f"Warning: Could not remove old file {old_file_path}: {e}")
+    
+    # Convert new image to SVG and save to disk
+    saved_svg_filepath = save_base64_image_as_svg(data['image'], racetrack_id)
+    
+    if not saved_svg_filepath:
+        return jsonify({"error": "Failed to convert image to SVG"}), 500
+    
+    # Update racetrack data in hashmap
+    racetracks[racetrack_id].update({
+        "image": data['image'],  # New base64 encoded image data
+        "saved_file": saved_svg_filepath,  # New SVG file path
+        "updated_at": datetime.now().isoformat()
+    })
+    
+    return jsonify({
+        "message": "Racetrack image updated successfully",
+        "racetrack": {
+            "id": racetrack_id,
+            "name": existing_racetrack["name"],
+            "saved_file": saved_svg_filepath,
+            "uploaded_at": existing_racetrack["uploaded_at"],
+            "updated_at": racetracks[racetrack_id]["updated_at"]
+        }
+    })
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

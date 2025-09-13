@@ -122,6 +122,80 @@ async function getRacetrack(id) {
     }
 }
 
+// Update racetrack image by ID (from file path)
+async function updateRacetrack(id, imagePath) {
+    try {
+        console.log(`\n🔄 Updating racetrack with ID: ${id}`);
+        
+        const base64Image = imageToBase64(imagePath);
+        if (!base64Image) {
+            console.error('❌ Failed to convert image to base64');
+            return null;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/racetracks/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image: base64Image
+            })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('✅ Update successful!');
+            console.log('📋 Response:', result);
+            if (result.racetrack.updated_at) {
+                console.log(`🕒 Updated at: ${result.racetrack.updated_at}`);
+            }
+            return result.racetrack;
+        } else {
+            console.error('❌ Update failed:', result);
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Network error:', error.message);
+        return null;
+    }
+}
+
+// Update racetrack image by ID (with base64 data)
+async function updateRacetrackWithBase64(id, base64Image) {
+    try {
+        console.log(`\n🔄 Updating racetrack with ID: ${id}`);
+
+        const response = await fetch(`${API_BASE_URL}/api/racetracks/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image: base64Image
+            })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('✅ Update successful!');
+            console.log('📋 Response:', result);
+            if (result.racetrack.updated_at) {
+                console.log(`🕒 Updated at: ${result.racetrack.updated_at}`);
+            }
+            return result.racetrack;
+        } else {
+            console.error('❌ Update failed:', result);
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Network error:', error.message);
+        return null;
+    }
+}
+
 // Main test function
 async function runTests() {
     console.log('🚀 Starting Racetrack API Tests');
@@ -139,6 +213,16 @@ async function runTests() {
             
             // Test 3: Get specific racetrack
             await getRacetrack(uploadedTrack.id);
+            
+            // Test 4: Update racetrack image (using the same image for simplicity)
+            console.log('\n🔄 Testing image update...');
+            const updatedTrack = await updateRacetrack(uploadedTrack.id, imagePath);
+            
+            if (updatedTrack) {
+                // Test 5: Verify the update by fetching the racetrack again
+                console.log('\n🔍 Verifying update...');
+                await getRacetrack(uploadedTrack.id);
+            }
         }
     } else {
         console.log('⚠️  racetrack.png not found. Creating a test upload with sample data...');
@@ -163,6 +247,15 @@ async function runTests() {
         if (response.ok) {
             await getAllRacetracks();
             await getRacetrack(result.racetrack.id);
+            
+            // Test update with the same test image
+            console.log('\n🔄 Testing image update with test data...');
+            const updatedTrack = await updateRacetrackWithBase64(result.racetrack.id, testImage);
+            
+            if (updatedTrack) {
+                console.log('\n🔍 Verifying update...');
+                await getRacetrack(result.racetrack.id);
+            }
         }
     }
     
