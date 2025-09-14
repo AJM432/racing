@@ -8,8 +8,14 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
+ENABLE_DEV = bool(int(os.getenv("ENABLE_DEV_MODE", False)))
+ALLOWED_ORIGINS="https://api.artyomg.com"
+if ENABLE_DEV:
+    ALLOWED_ORIGINS="http://localhost:3000"
 app = Flask(__name__)
-CORS(app)  # This will enable CORS for all routes on the app
+CORS(app, origins=[ALLOWED_ORIGINS])
+
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///racetracks.db'
@@ -336,7 +342,6 @@ def get_leaderboard(racetrack_id):
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    load_dotenv()
     debug_mode = bool(int(os.getenv("DEBUG", False)))
 
     app.run(host='0.0.0.0', port=5000, debug=debug_mode)
