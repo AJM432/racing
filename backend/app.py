@@ -139,7 +139,7 @@ def upload_racetrack():
         if isinstance(start_pos_data, (list, tuple)) and len(start_pos_data) == 2:
             try:
                 x, y = float(start_pos_data[0]), float(start_pos_data[1])
-                start_pos = f"({x}, {y})"
+                start_pos = f"[{x}, {y}]"
             except (ValueError, TypeError):
                 return jsonify({"error": "start_pos must contain two valid numbers"}), 400
         else:
