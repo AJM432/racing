@@ -7,34 +7,46 @@ const API_URL = process.env.REACT_APP_API_URL;
 const AddRacetrack = () => {
     const [title, setTitle] = useState("");
     const [canvasData, setCanvasData] = useState(null);
+    const [racetrack, setRacetrack] = useState(null); // store returned racetrack object
 
     const saveRacetrack = async () => {
         if (!title || !canvasData) return;
 
         const username = Cookies.get("username") || "anon goose";
+        const isUpdate = !!racetrack?.id;
 
         try {
-            const response = await fetch(`${API_URL}/api/racetracks`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: title,
-                    image: canvasData,
-                    username,
-                }),
-            });
+            const response = await fetch(
+                isUpdate
+                    ? `${API_URL}/api/racetracks/${racetrack.id}`
+                    : `${API_URL}/api/racetracks`,
+                {
+                    method: isUpdate ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: title,
+                        image: canvasData,
+                        username,
+                    }),
+                }
+            );
 
             if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
             const result = await response.json();
-            console.log("Racetrack saved:", result);
+
+            // store latest racetrack data from backend
+            setRacetrack(result.racetrack);
+            console.log(isUpdate ? "Racetrack updated:" : "Racetrack created:", result.racetrack);
         } catch (error) {
             console.error("Error saving racetrack:", error);
         }
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-6 space-y-6">
-            <h1 className="text-3xl font-bold text-white">Add a Racetrack</h1>
+        <div className="flex flex-col items-center justify-center min-h-screen space-y-6">
+            <h1 className="text-3xl font-bold text-white">
+                {racetrack?.id ? "Edit Racetrack" : "Add a Racetrack"}
+            </h1>
 
             {/* Title Input */}
             <input
@@ -52,12 +64,13 @@ const AddRacetrack = () => {
             <button
                 onClick={saveRacetrack}
                 disabled={!title}
-                className={`px-8 py-3 rounded-full font-bold shadow-lg transform transition-transform ${title
+                className={`px-8 py-3 rounded-full font-bold shadow-lg transform transition-transform ${
+                    title
                         ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:scale-110 hover:shadow-[0_0_25px_rgba(0,255,255,0.7)]"
                         : "bg-gray-600 text-gray-300 cursor-not-allowed"
-                    }`}
+                }`}
             >
-                Save Racetrack
+                {racetrack?.id ? "Update Racetrack" : "Save Racetrack"}
             </button>
         </div>
     );

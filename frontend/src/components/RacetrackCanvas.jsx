@@ -5,8 +5,9 @@ import { faUndo } from "@fortawesome/free-solid-svg-icons";
 const RacetrackCanvas = ({ onCanvasChange }) => {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [paths, setPaths] = useState([]); // stores arrays of points
-    const [currentPath, setCurrentPath] = useState([]); // track path being drawn
+    const [paths, setPaths] = useState([]); 
+    const [currentPath, setCurrentPath] = useState([]);
+    const [startPoint, setStartPoint] = useState(null); 
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -19,7 +20,7 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // redraw all paths
-        ctx.lineWidth = 40;
+        ctx.lineWidth = 80;
         ctx.lineCap = "round";
         ctx.strokeStyle = "#FF0";
         paths.forEach(path => {
@@ -31,7 +32,7 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
             ctx.stroke();
         });
 
-        // inform parent of current canvas snapshot
+        // notify parent
         onCanvasChange(canvas.toDataURL());
     }, [paths, onCanvasChange]);
 
@@ -39,6 +40,11 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
         const { offsetX, offsetY } = e.nativeEvent;
         setIsDrawing(true);
         setCurrentPath([[offsetX, offsetY]]);
+
+        // if this is the very first stroke, record its start
+        if (paths.length === 0 && !startPoint) {
+            setStartPoint([offsetX, offsetY]);
+        }
     };
 
     const draw = (e) => {
@@ -47,7 +53,7 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
         setCurrentPath((prev) => [...prev, [offsetX, offsetY]]);
 
         const ctx = canvasRef.current.getContext("2d");
-        ctx.lineWidth = 40;
+        ctx.lineWidth = 80;
         ctx.lineCap = "round";
         ctx.strokeStyle = "#FF0";
 
@@ -63,14 +69,27 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
     const stopDrawing = () => {
         if (!isDrawing) return;
         setIsDrawing(false);
+
         if (currentPath.length > 0) {
-            setPaths((prev) => [...prev, currentPath]);
+            let finalizedPath = [...currentPath];
+
+            // if this was the very first stroke, close the loop
+            if (paths.length === 0 && startPoint) {
+                finalizedPath = [...finalizedPath, startPoint];
+            }
+
+            setPaths((prev) => [...prev, finalizedPath]);
             setCurrentPath([]);
         }
     };
 
     const handleUndo = () => {
         setPaths((prev) => prev.slice(0, -1));
+
+        // if undoing the first stroke, reset startPoint
+        if (paths.length === 1) {
+            setStartPoint(null);
+        }
     };
 
     return (
