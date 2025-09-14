@@ -34,6 +34,7 @@ class Racetrack(db.Model):
     username = db.Column(db.String(50), nullable=False)
     saved_file = db.Column(db.String(200), nullable=False)
     leaderboard = db.Column(db.Text, nullable=True, default='{}')  # JSON string storing username->time mapping
+    start_pos = db.Column(db.String(50), nullable=True)  # Starting position coordinates as "(x, y)"
     uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=True)
 
@@ -43,6 +44,7 @@ class Racetrack(db.Model):
             'name': self.name,
             'username': self.username,
             'saved_file': self.saved_file,
+            'start_pos': self.start_pos,
             'uploaded_at': self.uploaded_at.isoformat()
         }
         if include_image_url:
@@ -130,6 +132,19 @@ def upload_racetrack():
     if 'username' not in data:
         return jsonify({"error": "Missing 'username' in request"}), 400
     
+    # Validate start_pos if provided
+    start_pos = None
+    if 'start_pos' in data:
+        start_pos_data = data['start_pos']
+        if isinstance(start_pos_data, (list, tuple)) and len(start_pos_data) == 2:
+            try:
+                x, y = float(start_pos_data[0]), float(start_pos_data[1])
+                start_pos = f"({x}, {y})"
+            except (ValueError, TypeError):
+                return jsonify({"error": "start_pos must contain two valid numbers"}), 400
+        else:
+            return jsonify({"error": "start_pos must be an array of two numbers like [0, 5]"}), 400
+    
     # Generate unique ID for the racetrack
     racetrack_id = str(uuid.uuid4())
     
@@ -147,7 +162,8 @@ def upload_racetrack():
             id=racetrack_id,
             name=data['name'],
             username=data['username'],
-            saved_file=saved_filepath
+            saved_file=saved_filepath,
+            start_pos=start_pos
         )
         db.session.add(new_racetrack)
         db.session.commit()
@@ -215,6 +231,19 @@ def update_racetrack_image(racetrack_id):
     if 'image' not in data:
         return jsonify({"error": "Missing 'image' in request"}), 400
     
+    # Validate start_pos if provided
+    start_pos = None
+    if 'start_pos' in data:
+        start_pos_data = data['start_pos']
+        if isinstance(start_pos_data, (list, tuple)) and len(start_pos_data) == 2:
+            try:
+                x, y = float(start_pos_data[0]), float(start_pos_data[1])
+                start_pos = f"({x}, {y})"
+            except (ValueError, TypeError):
+                return jsonify({"error": "start_pos must contain two valid numbers"}), 400
+        else:
+            return jsonify({"error": "start_pos must be an array of two numbers like [0, 5]"}), 400
+    
     try:
         # Get existing racetrack from database
         existing_racetrack = Racetrack.query.get(racetrack_id)
@@ -239,6 +268,8 @@ def update_racetrack_image(racetrack_id):
         
         # Update racetrack data in database
         existing_racetrack.saved_file = saved_filepath
+        if start_pos is not None:
+            existing_racetrack.start_pos = start_pos
         existing_racetrack.updated_at = datetime.utcnow()
         
         db.session.commit()
