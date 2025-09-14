@@ -33,7 +33,7 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
         });
 
         // notify parent
-        onCanvasChange(canvas.toDataURL());
+        onCanvasChange(canvas.toDataURL(), startPoint);
     }, [paths, onCanvasChange]);
 
     const startDrawing = (e) => {

@@ -7,7 +7,8 @@ const API_URL = process.env.REACT_APP_API_URL;
 const AddRacetrack = () => {
     const [title, setTitle] = useState("");
     const [canvasData, setCanvasData] = useState(null);
-    const [racetrack, setRacetrack] = useState(null); // store returned racetrack object
+    const [startPos, setStartPos] = useState([0,0])
+    const [racetrack, setRacetrack] = useState(null); 
 
     const saveRacetrack = async () => {
         if (!title || !canvasData) return;
@@ -26,7 +27,7 @@ const AddRacetrack = () => {
                     body: JSON.stringify({
                         name: title,
                         image: canvasData,
-                        username,
+                        username
                     }),
                 }
             );
@@ -58,7 +59,7 @@ const AddRacetrack = () => {
             />
 
             {/* Canvas */}
-            <RacetrackCanvas onCanvasChange={setCanvasData} />
+            <RacetrackCanvas onCanvasChange={(_canvasData, _startPos) => {setCanvasData(_canvasData); setStartPos(_startPos)}} />
 
             {/* Save Button */}
             <button
