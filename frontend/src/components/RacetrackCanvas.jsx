@@ -96,11 +96,32 @@ const RacetrackCanvas = ({ onCanvasChange }) => {
         <div className="relative w-full max-w-3xl">
             <canvas
                 ref={canvasRef}
-                className="border-4 border-gray-700 rounded-2xl bg-gray-800 cursor-crosshair w-full shadow-lg"
+                className="border-4 border-gray-700 rounded-2xl bg-gray-800 cursor-crosshair w-full shadow-lg touch-none"
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
                 onMouseLeave={stopDrawing}
+                onTouchStart={(e) => {
+                    e.preventDefault();
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const offsetX = touch.clientX - rect.left;
+                    const offsetY = touch.clientY - rect.top;
+                    startDrawing({ nativeEvent: { offsetX, offsetY } });
+                }}
+                onTouchMove={(e) => {
+                    e.preventDefault();
+                    if (!isDrawing) return;
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const offsetX = touch.clientX - rect.left;
+                    const offsetY = touch.clientY - rect.top;
+                    draw({ nativeEvent: { offsetX, offsetY } });
+                }}
+                onTouchEnd={(e) => {
+                    e.preventDefault();
+                    stopDrawing();
+                }}
             />
             {/* Undo button */}
             <button
