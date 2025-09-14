@@ -174,6 +174,58 @@ async function testUpdate(racetrackId, imagePath) {
     }
 }
 
+// Test submit race time
+async function testSubmitTime(racetrackId, username, time) {
+    try {
+        console.log(`Testing POST /api/racetracks/${racetrackId}/times`);
+        
+        const response = await fetch(`${API_BASE_URL}/api/racetracks/${racetrackId}/times`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, time: parseFloat(time) })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('Success:', result);
+            if (result.is_new_record) {
+                console.log('🏆 New record set!');
+            } else {
+                console.log('⏱️ Time submitted but not a new record');
+            }
+        } else {
+            console.error('Failed:', result);
+        }
+    } catch (error) {
+        console.error('Network error:', error.message);
+    }
+}
+
+// Test get leaderboard
+async function testLeaderboard(racetrackId) {
+    try {
+        console.log(`Testing GET /api/racetracks/${racetrackId}/leaderboard`);
+        
+        const response = await fetch(`${API_BASE_URL}/api/racetracks/${racetrackId}/leaderboard`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('Success:', result);
+            console.log(`\n🏁 Leaderboard for "${result.racetrack_name}":`);
+            result.leaderboard.forEach(entry => {
+                const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : '  ';
+                console.log(`${medal} ${entry.rank}. ${entry.username} - ${entry.time}s`);
+            });
+            console.log(`\nTotal entries: ${result.total_entries}`);
+        } else {
+            console.error('Failed:', result);
+        }
+    } catch (error) {
+        console.error('Network error:', error.message);
+    }
+}
+
 // Main function to handle command line arguments
 function main() {
     const args = process.argv.slice(2);
@@ -188,6 +240,8 @@ function main() {
         console.log('  listuser <username>               - Test GET /api/racetracks/user/<username>');
         console.log('  get <racetrack_id>                - Test GET /api/racetracks/<id>');
         console.log('  update <racetrack_id> <image_path> - Test PUT /api/racetracks/<id>');
+        console.log('  submittime <racetrack_id> <username> <time> - Test POST /api/racetracks/<id>/times');
+        console.log('  leaderboard <racetrack_id>        - Test GET /api/racetracks/<id>/leaderboard');
         return;
     }
     
@@ -233,9 +287,27 @@ function main() {
             }
             testUpdate(updateId, updateImagePath);
             break;
+        case 'submittime':
+            const submitRacetrackId = args[1];
+            const submitUsername = args[2];
+            const submitTime = args[3];
+            if (!submitRacetrackId || !submitUsername || !submitTime) {
+                console.error('Error: Racetrack ID, username, and time required for submittime test');
+                return;
+            }
+            testSubmitTime(submitRacetrackId, submitUsername, submitTime);
+            break;
+        case 'leaderboard':
+            const leaderboardRacetrackId = args[1];
+            if (!leaderboardRacetrackId) {
+                console.error('Error: Racetrack ID required for leaderboard test');
+                return;
+            }
+            testLeaderboard(leaderboardRacetrackId);
+            break;
         default:
             console.error('Unknown test:', testName);
-            console.log('Available tests: welcome, upload, list, get, update');
+            console.log('Available tests: welcome, upload, list, listuser, get, update, submittime, leaderboard');
     }
 }
 

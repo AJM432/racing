@@ -97,6 +97,62 @@ Update racetrack image.
 }
 ```
 
+### POST `/api/racetracks/<id>/times`
+Submit a race time for a specific track.
+
+**Request:**
+```json
+{
+  "username": "john_doe",
+  "time": 45.23
+}
+```
+
+**Response (New Record):**
+```json
+{
+  "message": "Race time submitted successfully",
+  "username": "john_doe",
+  "time": 45.23,
+  "is_new_record": true
+}
+```
+
+**Response (Not Improved):**
+```json
+{
+  "message": "Time not improved",
+  "username": "john_doe",
+  "time": 47.50,
+  "current_best": 45.23,
+  "is_new_record": false
+}
+```
+
+### GET `/api/racetracks/<id>/leaderboard`
+Get the leaderboard for a specific track, sorted by best times.
+
+**Response:**
+```json
+{
+  "racetrack_id": "abc1232039023",
+  "racetrack_name": "Monaco Grand Prix",
+  "leaderboard": [
+    {
+      "username": "speedster",
+      "time": 42.15,
+      "rank": 1
+    },
+    {
+      "username": "john_doe",
+      "time": 45.23,
+      "rank": 2
+    }
+  ],
+  "total_entries": 2
+}
+```
+
 ## Database
 
 The API uses SQLite with Flask-SQLAlchemy for persistent storage. Database file: `racetracks.db`
@@ -106,6 +162,7 @@ The API uses SQLite with Flask-SQLAlchemy for persistent storage. Database file:
 - `name` (String, 100 chars)
 - `username` (String, 50 chars)
 - `saved_file` (String, 200 chars)
+- `leaderboard` (Text, JSON string storing username->time mapping)
 - `uploaded_at` (DateTime)
 - `updated_at` (DateTime, nullable)
 
@@ -150,6 +207,16 @@ node test_racetrack_api.js get abc123-def456-789...
 node test_racetrack_api.js update abc123-def456-789... new_racetrack.png
 ```
 
+### Submit a race time
+```bash
+node test_racetrack_api.js submittime abc123-def456-789... john_doe 45.23
+```
+
+### View leaderboard for a track
+```bash
+node test_racetrack_api.js leaderboard abc123-def456-789...
+```
+
 ## Available Test Commands
 - `welcome` - Test GET /
 - `upload <image_path> [name] [username]` - Test POST /api/racetracks
@@ -157,3 +224,5 @@ node test_racetrack_api.js update abc123-def456-789... new_racetrack.png
 - `listuser <username>` - Test GET /api/racetracks/user/<username>
 - `get <racetrack_id>` - Test GET /api/racetracks/<id>
 - `update <racetrack_id> <image_path>` - Test PUT /api/racetracks/<id>
+- `submittime <racetrack_id> <username> <time>` - Test POST /api/racetracks/<id>/times
+- `leaderboard <racetrack_id>` - Test GET /api/racetracks/<id>/leaderboard

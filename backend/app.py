@@ -22,10 +22,11 @@ class Racetrack(db.Model):
     name = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(50), nullable=False)
     saved_file = db.Column(db.String(200), nullable=False)
+    leaderboard = db.Column(db.Text, nullable=True, default='{}')  # JSON string storing username->time mapping
     uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=True)
 
-    def to_dict(self, include_image_url=False):
+    def to_dict(self, include_image_url=False, include_leaderboard=False):
         result = {
             'id': self.id,
             'name': self.name,
@@ -37,6 +38,12 @@ class Racetrack(db.Model):
             # Return URL to access the image instead of base64 data
             filename = os.path.basename(self.saved_file)
             result['image_url'] = f'/saved_images/{filename}'
+        if include_leaderboard:
+            import json
+            try:
+                result['leaderboard'] = json.loads(self.leaderboard or '{}')
+            except json.JSONDecodeError:
+                result['leaderboard'] = {}
         if self.updated_at:
             result['updated_at'] = self.updated_at.isoformat()
         return result
@@ -231,6 +238,101 @@ def update_racetrack_image(racetrack_id):
         })
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+# Submit race time for a track
+@app.route('/api/racetracks/<racetrack_id>/times', methods=['POST'])
+def submit_race_time(racetrack_id):
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    
+    # Validate required fields
+    if 'username' not in data:
+        return jsonify({"error": "Missing 'username' in request"}), 400
+    if 'time' not in data:
+        return jsonify({"error": "Missing 'time' in request"}), 400
+    
+    try:
+        # Validate time is a positive number
+        race_time = float(data['time'])
+        if race_time <= 0:
+            return jsonify({"error": "Time must be a positive number"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "Time must be a valid number"}), 400
+    
+    try:
+        # Get existing racetrack from database
+        racetrack = Racetrack.query.get(racetrack_id)
+        if not racetrack:
+            return jsonify({"error": "Racetrack not found"}), 404
+        
+        # Parse existing leaderboard
+        import json
+        try:
+            leaderboard = json.loads(racetrack.leaderboard or '{}')
+        except json.JSONDecodeError:
+            leaderboard = {}
+        
+        # Update or add user's time (only if it's better than existing time)
+        username = data['username']
+        is_new_record = username not in leaderboard or race_time < leaderboard[username]
+        
+        if is_new_record:
+            leaderboard[username] = race_time
+            racetrack.leaderboard = json.dumps(leaderboard)
+            racetrack.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            return jsonify({
+                "message": "Race time submitted successfully",
+                "username": username,
+                "time": race_time,
+                "is_new_record": True
+            }), 201
+        else:
+            return jsonify({
+                "message": "Time not improved",
+                "username": username,
+                "time": race_time,
+                "current_best": leaderboard[username],
+                "is_new_record": False
+            }), 200
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+# Get leaderboard for a track
+@app.route('/api/racetracks/<racetrack_id>/leaderboard', methods=['GET'])
+def get_leaderboard(racetrack_id):
+    try:
+        racetrack = Racetrack.query.get(racetrack_id)
+        if not racetrack:
+            return jsonify({"error": "Racetrack not found"}), 404
+        
+        # Parse leaderboard and sort by time
+        import json
+        try:
+            leaderboard = json.loads(racetrack.leaderboard or '{}')
+        except json.JSONDecodeError:
+            leaderboard = {}
+        
+        # Convert to sorted list of entries
+        sorted_leaderboard = [
+            {"username": username, "time": time, "rank": idx + 1}
+            for idx, (username, time) in enumerate(sorted(leaderboard.items(), key=lambda x: x[1]))
+        ]
+        
+        return jsonify({
+            "racetrack_id": racetrack_id,
+            "racetrack_name": racetrack.name,
+            "leaderboard": sorted_leaderboard,
+            "total_entries": len(sorted_leaderboard)
+        })
+        
+    except Exception as e:
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 if __name__ == '__main__':
