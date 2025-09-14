@@ -10,7 +10,7 @@ import os
 
 load_dotenv()
 ENABLE_DEV = bool(int(os.getenv("ENABLE_DEV_MODE", False)))
-ALLOWED_ORIGINS="https://api.artyomg.com"
+ALLOWED_ORIGINS="https://racing-nefz.onrender.com"
 if ENABLE_DEV:
     ALLOWED_ORIGINS="http://localhost:3000"
 app = Flask(__name__)
