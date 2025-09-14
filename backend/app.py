@@ -12,12 +12,13 @@ load_dotenv()
 ENABLE_DEV = bool(int(os.getenv("ENABLE_DEV_MODE", False)))
 
 # Production frontend domain
-FRONTEND_ORIGINS = ["https://api.artyomg.com"]
+FRONTEND_ORIGINS = ["https://racing.artyomg.com"]
 
 # Add dev origin if in dev mode
 if ENABLE_DEV:
     FRONTEND_ORIGINS.append("http://localhost:3000")
 
+app = Flask(__name__)
 CORS(app, origins=FRONTEND_ORIGINS)
 
 
