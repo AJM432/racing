@@ -10,11 +10,15 @@ import os
 
 load_dotenv()
 ENABLE_DEV = bool(int(os.getenv("ENABLE_DEV_MODE", False)))
-ALLOWED_ORIGINS="https://api.artyomg.com"
+
+# Production frontend domain
+FRONTEND_ORIGINS = ["https://api.artyomg.com"]
+
+# Add dev origin if in dev mode
 if ENABLE_DEV:
-    ALLOWED_ORIGINS="http://localhost:3000"
-app = Flask(__name__)
-CORS(app, origins=[ALLOWED_ORIGINS])
+    FRONTEND_ORIGINS.append("http://localhost:3000")
+
+CORS(app, origins=FRONTEND_ORIGINS)
 
 
 # Database configuration
