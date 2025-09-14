@@ -2,3 +2,4 @@
 saved_images/
 __pycache__/
 instance/
+.env*

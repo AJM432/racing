@@ -27,7 +27,8 @@ const AddRacetrack = () => {
                     body: JSON.stringify({
                         name: title,
                         image: canvasData,
-                        username
+                        username,
+                        start_pos: startPos
                     }),
                 }
             );
